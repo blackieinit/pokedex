@@ -21,12 +21,7 @@ export class PokemonService {
       return pokemon;
 
     } catch (error) {
-      if ( error.code === 11000 ) {
-        throw new BadRequestException(`El dato: ${JSON.stringify( error.keyValue )} se encuentra registrado en la base de datos`);
-      } else {
-        console.log( error );
-        throw new InternalServerErrorException("No se pudo crear el pokemon: error interno en el servidor");
-      }
+      this.handleExceptions( error )
     }
   }
 
@@ -52,11 +47,32 @@ export class PokemonService {
     return pokemon;
   }
 
-  update(id: number, updatePokemonDto: UpdatePokemonDto) {
-    return `This action updates a #${id} pokemon`;
+  async update(term: string, updatePokemonDto: UpdatePokemonDto) {
+    try {
+      const pokemon = await this.findOne( term );
+
+      if ( updatePokemonDto.name ) 
+        updatePokemonDto.name = updatePokemonDto.name.toLocaleLowerCase()
+
+      await pokemon.updateOne( updatePokemonDto );
+      
+      return {...pokemon.toJSON(), ...updatePokemonDto};
+
+    } catch (error) {
+      this.handleExceptions(error)
+    }
   }
 
   remove(id: number) {
     return `This action removes a #${id} pokemon`;
+  }
+
+  private handleExceptions( error:any ) {
+    if ( error.code === 11000 ) {
+      throw new BadRequestException(`El dato: ${JSON.stringify( error.keyValue )} se encuentra registrado en la base de datos`);
+    } else {
+      console.log( error );
+      throw new InternalServerErrorException("No se pudo modificar el pokemon: error interno en el servidor");
+    }
   }
 }
